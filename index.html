@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#5c4b9b" />
+  <title>Samudoku — Sudoku Samurai</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Sudoku Samurai</p>
+        <h1>Samudoku</h1>
+        <p class="subtitle">Cinco sudokus conectados. Un solo desafío.</p>
+      </div>
+      <div class="difficulty-pill" aria-label="Dificultad actual">Demo · Intermedio</div>
+    </header>
+
+    <section class="game-layout">
+      <div class="board-panel">
+        <div class="status-row">
+          <div>
+            <span class="status-label">Zona activa</span>
+            <strong id="active-grid-label">Selecciona una casilla</strong>
+          </div>
+          <div class="stats">
+            <span>⏱ <strong id="timer">00:00</strong></span>
+            <span>✓ <strong id="progress">0/369</strong></span>
+          </div>
+        </div>
+
+        <div class="board-wrap">
+          <div id="board" class="samurai-board" aria-label="Tablero de Samudoku"></div>
+        </div>
+
+        <p class="shared-note">
+          Las casillas con <span class="shared-sample"></span> pertenecen a dos sudokus a la vez.
+        </p>
+      </div>
+
+      <aside class="control-panel">
+        <div class="panel-card">
+          <h2>Números</h2>
+          <div id="number-pad" class="number-pad" aria-label="Teclado numérico"></div>
+          <button id="erase-btn" class="wide-btn secondary">⌫ Borrar</button>
+        </div>
+
+        <div class="panel-card actions">
+          <button id="check-btn" class="wide-btn primary">Comprobar</button>
+          <button id="hint-btn" class="wide-btn">💡 Pista</button>
+          <button id="reset-btn" class="wide-btn danger-ghost">↻ Reiniciar</button>
+        </div>
+
+        <div class="panel-card help-card">
+          <h2>Cómo jugar</h2>
+          <p>Selecciona una casilla y usa los botones del 1 al 9 o tu teclado.</p>
+          <p>El tablero resalta automáticamente el sudoku —o los dos sudokus— relacionados con tu selección.</p>
+        </div>
+      </aside>
+    </section>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <div id="win-modal" class="modal hidden" aria-hidden="true">
+      <div class="modal-card">
+        <div class="win-icon">★</div>
+        <h2>¡Samudoku completado!</h2>
+        <p>Resolviste los cinco sudokus del Samurai.</p>
+        <button id="close-modal-btn" class="wide-btn primary">Seguir mirando</button>
+      </div>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
