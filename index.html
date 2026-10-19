@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#5c4b9b" />
   <title>Samudoku — Sudoku Samurai</title>
   <link rel="stylesheet" href="style.css" />
@@ -15,15 +15,22 @@
         <h1>Samudoku</h1>
         <p class="subtitle">Cinco sudokus conectados. Un solo desafío.</p>
       </div>
-      <div class="difficulty-pill" aria-label="Dificultad actual">Demo · Intermedio</div>
+      <div class="hero-badges">
+        <div class="star-wallet" title="Estrellas disponibles para comprar pistas">
+          <span aria-hidden="true">⭐</span>
+          <strong id="star-count">4</strong>
+        </div>
+        <div id="difficulty-pill" class="difficulty-pill">Fácil · 1/10</div>
+      </div>
     </header>
 
     <section class="game-layout">
       <div class="board-panel">
         <div class="status-row">
           <div>
-            <span class="status-label">Zona activa</span>
-            <strong id="active-grid-label">Selecciona una casilla</strong>
+            <span class="status-label">Desafío actual</span>
+            <strong id="level-label">Fácil · Desafío 1</strong>
+            <span id="active-grid-label" class="active-grid-label">Selecciona una casilla</span>
           </div>
           <div class="stats">
             <span>⏱ <strong id="timer">00:00</strong></span>
@@ -31,32 +38,53 @@
           </div>
         </div>
 
+        <div class="zoom-toolbar" aria-label="Acercar un sudoku">
+          <span class="zoom-label">Vista</span>
+          <button class="zoom-btn active" data-focus="all" type="button">Completa</button>
+          <button class="zoom-btn" data-focus="tl" type="button" title="Superior izquierdo">↖</button>
+          <button class="zoom-btn" data-focus="tr" type="button" title="Superior derecho">↗</button>
+          <button class="zoom-btn" data-focus="c" type="button" title="Central">●</button>
+          <button class="zoom-btn" data-focus="bl" type="button" title="Inferior izquierdo">↙</button>
+          <button class="zoom-btn" data-focus="br" type="button" title="Inferior derecho">↘</button>
+        </div>
+
         <div class="board-wrap">
           <div id="board" class="samurai-board" aria-label="Tablero de Samudoku"></div>
         </div>
 
         <p class="shared-note">
-          Las casillas con <span class="shared-sample"></span> pertenecen a dos sudokus a la vez.
+          Las casillas con <span class="shared-sample"></span> pertenecen a dos sudokus a la vez. Usa los botones de <strong>Vista</strong> para ampliar uno de ellos.
         </p>
       </div>
 
       <aside class="control-panel">
+        <div class="panel-card level-card">
+          <div class="card-heading-row">
+            <h2>Niveles</h2>
+            <span class="tiny-note">10 por grupo</span>
+          </div>
+          <div id="difficulty-tabs" class="difficulty-tabs" aria-label="Grupos de dificultad"></div>
+          <p id="pack-description" class="pack-description"></p>
+          <div id="puzzle-grid" class="puzzle-grid" aria-label="Desafíos del nivel"></div>
+        </div>
+
         <div class="panel-card">
           <h2>Números</h2>
           <div id="number-pad" class="number-pad" aria-label="Teclado numérico"></div>
-          <button id="erase-btn" class="wide-btn secondary">⌫ Borrar</button>
+          <button id="erase-btn" class="wide-btn secondary" type="button">⌫ Borrar</button>
         </div>
 
         <div class="panel-card actions">
-          <button id="check-btn" class="wide-btn primary">Comprobar</button>
-          <button id="hint-btn" class="wide-btn">💡 Pista</button>
-          <button id="reset-btn" class="wide-btn danger-ghost">↻ Reiniciar</button>
+          <button id="check-btn" class="wide-btn primary" type="button">Comprobar</button>
+          <button id="hint-btn" class="wide-btn hint-btn" type="button">💡 Pista · <span id="hint-cost">2</span> ⭐</button>
+          <button id="reset-btn" class="wide-btn danger-ghost" type="button">↻ Reiniciar este desafío</button>
         </div>
 
         <div class="panel-card help-card">
-          <h2>Cómo jugar</h2>
-          <p>Selecciona una casilla y usa los botones del 1 al 9 o tu teclado.</p>
-          <p>El tablero resalta automáticamente el sudoku —o los dos sudokus— relacionados con tu selección.</p>
+          <h2>Estrellas y pistas</h2>
+          <p>Empiezas con algunas ⭐. Cada pista cuesta <strong>2 estrellas</strong>.</p>
+          <p>La primera vez que completas un desafío ganas estrellas. Resolverlo sin pistas ni errores entrega bonificaciones.</p>
+          <p>Tu progreso, estrellas y partidas quedan guardados en este dispositivo.</p>
         </div>
       </aside>
     </section>
@@ -67,8 +95,12 @@
       <div class="modal-card">
         <div class="win-icon">★</div>
         <h2>¡Samudoku completado!</h2>
-        <p>Resolviste los cinco sudokus del Samurai.</p>
-        <button id="close-modal-btn" class="wide-btn primary">Seguir mirando</button>
+        <p id="win-message">Resolviste los cinco sudokus del Samurai.</p>
+        <div id="reward-box" class="reward-box"></div>
+        <div class="modal-actions">
+          <button id="next-level-btn" class="wide-btn primary" type="button">Siguiente desafío</button>
+          <button id="close-modal-btn" class="wide-btn secondary" type="button">Seguir mirando</button>
+        </div>
       </div>
     </div>
   </main>
