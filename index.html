@@ -8,6 +8,8 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <canvas id="celebration-canvas" class="celebration-canvas" aria-hidden="true"></canvas>
+
   <main class="app-shell">
     <header class="hero">
       <div>
@@ -16,6 +18,7 @@
         <p class="subtitle">Cinco sudokus conectados. Un solo desafío.</p>
       </div>
       <div class="hero-badges">
+        <button id="music-btn" class="music-btn" type="button" aria-pressed="false" title="Activar música suave">🎵 Música</button>
         <div class="star-wallet" title="Estrellas disponibles para comprar pistas">
           <span aria-hidden="true">⭐</span>
           <strong id="star-count">4</strong>
@@ -23,6 +26,14 @@
         <div id="difficulty-pill" class="difficulty-pill">Fácil · 1/10</div>
       </div>
     </header>
+
+    <section id="challenge-banner" class="challenge-banner hidden" aria-live="polite">
+      <div>
+        <strong>🎁 Desafío compartido</strong>
+        <span>Estás jugando un Samudoku creado por otra persona.</span>
+      </div>
+      <button id="leave-challenge-btn" class="small-btn" type="button">Volver a niveles</button>
+    </section>
 
     <section class="game-layout">
       <div class="board-panel">
@@ -69,7 +80,11 @@
         </div>
 
         <div class="panel-card">
-          <h2>Números</h2>
+          <div class="card-heading-row">
+            <h2>Números</h2>
+            <button id="clear-number-highlight" class="tiny-action" type="button" title="Quitar resaltado de número">Quitar marca</button>
+          </div>
+          <p class="number-help">Toca un número para marcar todas sus apariciones en el tablero.</p>
           <div id="number-pad" class="number-pad" aria-label="Teclado numérico"></div>
           <button id="erase-btn" class="wide-btn secondary" type="button">⌫ Borrar</button>
         </div>
@@ -78,6 +93,12 @@
           <button id="check-btn" class="wide-btn primary" type="button">Comprobar</button>
           <button id="hint-btn" class="wide-btn hint-btn" type="button">💡 Pista · <span id="hint-cost">2</span> ⭐</button>
           <button id="reset-btn" class="wide-btn danger-ghost" type="button">↻ Reiniciar este desafío</button>
+        </div>
+
+        <div class="panel-card creator-callout">
+          <h2>🧩 Crea tu propio Samudoku</h2>
+          <p>Diseña un desafío, comprueba si tiene solución única y compártelo con un enlace.</p>
+          <button id="open-creator-btn" class="wide-btn creator-btn" type="button">Abrir creador</button>
         </div>
 
         <div class="panel-card help-card">
@@ -89,7 +110,70 @@
       </aside>
     </section>
 
+    <section id="creator-section" class="creator-section hidden">
+      <div class="creator-header">
+        <div>
+          <p class="eyebrow">Laboratorio Samudoku</p>
+          <h2>Crea tu propio Samudoku</h2>
+          <p>Partimos de una solución Samurai válida. Haz clic en las casillas para decidir qué números quedarán visibles como pistas.</p>
+        </div>
+        <button id="close-creator-btn" class="small-btn" type="button">Cerrar</button>
+      </div>
+
+      <div class="creator-layout">
+        <div class="creator-board-card">
+          <div class="creator-toolbar">
+            <label>
+              Borrador inicial
+              <select id="creator-preset">
+                <option value="easy">Fácil</option>
+                <option value="medium" selected>Medio</option>
+                <option value="hard">Difícil</option>
+                <option value="expert">Experto</option>
+              </select>
+            </label>
+            <button id="creator-randomize-btn" class="small-btn" type="button">🎲 Nuevo borrador</button>
+            <button id="creator-show-solution-btn" class="small-btn" type="button" aria-pressed="false">👁 Mostrar solución</button>
+          </div>
+          <div class="creator-board-wrap">
+            <div id="creator-board" class="samurai-board creator-board" aria-label="Creador de Samudoku"></div>
+          </div>
+          <p class="creator-tip">Casilla oscura = pista que recibirá la otra persona. Casilla tenue = número oculto.</p>
+        </div>
+
+        <aside class="creator-controls">
+          <div class="panel-card">
+            <h3>Estado del desafío</h3>
+            <div id="creator-stats" class="creator-stats">
+              <span>Pistas: <strong id="creator-givens-count">0</strong></span>
+              <span>Dificultad: <strong id="creator-difficulty">Sin analizar</strong></span>
+            </div>
+            <div id="creator-validation" class="validation-box neutral">Todavía no se ha analizado.</div>
+            <button id="creator-validate-btn" class="wide-btn primary" type="button">🔎 Analizar desafío</button>
+          </div>
+
+          <div class="panel-card actions">
+            <button id="creator-share-btn" class="wide-btn creator-btn" type="button" disabled>🔗 Compartir desafío</button>
+            <button id="creator-play-btn" class="wide-btn secondary" type="button" disabled>▶ Probar mi desafío</button>
+            <button id="creator-copy-btn" class="wide-btn secondary" type="button" disabled>📋 Copiar enlace</button>
+          </div>
+
+          <div class="panel-card help-card">
+            <h3>Qué comprueba Samudoku</h3>
+            <p><strong>Resoluble:</strong> encuentra al menos una solución válida.</p>
+            <p><strong>Único:</strong> comprueba que no haya una segunda solución dentro del análisis.</p>
+            <p><strong>Dificultad:</strong> es una estimación basada en pistas y esfuerzo del solucionador automático; sirve como orientación.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <div id="subgrid-celebration" class="subgrid-celebration hidden" aria-live="polite">
+      <span>🎉</span>
+      <strong id="subgrid-celebration-text">¡Sudoku completado!</strong>
+    </div>
 
     <div id="win-modal" class="modal hidden" aria-hidden="true">
       <div class="modal-card">

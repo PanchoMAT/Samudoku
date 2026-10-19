@@ -1,67 +1,58 @@
-# Samudoku — versión 2
+# Samudoku v3
 
-Sudoku Samurai para navegador, preparado para GitHub Pages y diseñado para funcionar bien tanto en computador como en celular.
+**Samudoku** es un Sudoku Samurai jugable directamente en el navegador y preparado para GitHub Pages.
 
 ## Novedades de esta versión
 
-### ⭐ Estrellas acumulables
+### Resaltado global de números
+Al seleccionar un número del teclado lateral, todas sus apariciones se resaltan en el tablero completo. El botón **Quitar marca** elimina el resaltado.
 
-- El jugador comienza con **4 estrellas**.
-- Una pista cuesta **2 estrellas**.
-- La primera vez que se completa un desafío se ganan estrellas.
-- Hay bonificación por terminar **sin usar pistas** y **sin errores detectados al comprobar**.
-- Repetir un desafío ya completado no vuelve a entregar estrellas.
-- Las estrellas se guardan en `localStorage` del navegador.
+### Música ambiental
+El botón **🎵 Música** activa una música ambiental suave generada directamente por el navegador con Web Audio API. No usa archivos externos ni música con derechos de autor. Por las políticas de los navegadores, la música comienza solo después de que la persona pulse el botón.
 
-### 🔎 Vista ampliada de cada sudoku
+### Creador de Samudoku
+La sección **Crea tu propio Samudoku** permite diseñar desafíos personalizados.
 
-Sobre el tablero aparecen seis botones:
+- Parte de una solución Samurai válida.
+- Se crean desafíos ocultando o mostrando pistas.
+- Incluye borradores Fácil, Medio, Difícil y Experto.
+- El analizador comprueba si el desafío es resoluble.
+- Detecta si la solución es única o si existen varias soluciones.
+- Estima la dificultad mediante una combinación de cantidad de pistas y esfuerzo del solucionador automático.
+- Solo habilita el enlace compartible cuando puede certificar una solución única.
+- El desafío se codifica directamente en la URL, por lo que no se necesita servidor ni base de datos.
+- Quien recibe el enlace puede jugar el desafío dentro del mismo Samudoku.
 
-- Vista completa.
-- Superior izquierdo.
-- Superior derecho.
-- Central.
-- Inferior izquierdo.
-- Inferior derecho.
+> La dificultad es una estimación orientativa. Una medida de dificultad humana exacta requeriría modelar técnicas concretas de resolución.
 
-Al elegir uno de los cinco sudokus, ese tablero se muestra como una cuadrícula 9×9 grande. Esto está especialmente pensado para jugar desde un teléfono.
+### Celebraciones
+Cada vez que se completa uno de los cinco sudokus 9×9 aparece una celebración breve con fuegos artificiales. Al completar el Samurai completo se muestra una celebración mayor.
 
-### 🎮 40 desafíos en grupos de 10
+### Sistema de estrellas
+Se conserva el sistema de estrellas de la versión anterior:
 
-La primera colección tiene cuatro grupos:
+- Se empieza con 4 ⭐.
+- Cada pista cuesta 2 ⭐.
+- Los niveles oficiales entregan estrellas la primera vez que se completan.
+- Los desafíos personalizados no entregan estrellas para evitar que se pueda alterar la economía del juego creando puzzles triviales.
 
-1. **Fácil** — 10 desafíos.
-2. **Medio** — 10 desafíos.
-3. **Difícil** — 10 desafíos.
-4. **Experto** — 10 desafíos.
+## Niveles incluidos
 
-La cantidad de pistas iniciales disminuye progresivamente. Todos los desafíos se derivan de un puzzle Samurai base con solución única y conservan todas sus pistas esenciales; agregar pistas mantiene la unicidad.
+- 10 Fácil
+- 10 Medio
+- 10 Difícil
+- 10 Experto
 
-### 💾 Progreso guardado
+Los 40 niveles oficiales mantienen solución única.
 
-Se guardan por separado:
-
-- estrellas;
-- desafíos completados;
-- tablero en curso de cada desafío;
-- pistas compradas;
-- tiempo transcurrido;
-- último nivel jugado.
-
-## Archivos que debes reemplazar en GitHub
-
-Reemplaza estos tres archivos de la versión anterior:
+## Archivos
 
 - `index.html`
 - `style.css`
 - `app.js`
+- `README.md`
 
-No necesita librerías ni instalaciones adicionales.
+## Actualizar GitHub Pages
 
-## GitHub Pages
+Reemplaza `index.html`, `style.css` y `app.js` en la raíz del repositorio y realiza un nuevo commit. No es necesario volver a configurar GitHub Pages.
 
-Si GitHub Pages ya estaba funcionando, no necesitas configurarlo nuevamente. Al reemplazar los archivos y confirmar el commit, la misma dirección web se actualizará automáticamente.
-
-## Próximas ideas
-
-La estructura queda preparada para agregar después notas/candidatos, vidas o errores, logros, sonidos, animaciones, desafíos diarios, más colecciones de puzzles y modo instalable como app (PWA).

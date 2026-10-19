@@ -404,3 +404,245 @@ h1 {
   .number-pad { grid-template-columns: repeat(9, 1fr); gap: 4px; }
   .num-btn { min-height: 42px; border-radius: 9px; font-size: 0.95rem; }
 }
+
+/* --- Samudoku v3 additions --- */
+.hidden { display: none !important; }
+
+.music-btn,
+.small-btn,
+.tiny-action {
+  border: 1px solid rgba(92, 75, 155, 0.16);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  font-weight: 800;
+}
+.music-btn {
+  border-radius: 999px;
+  padding: 10px 14px;
+  box-shadow: var(--shadow);
+  font-size: 0.84rem;
+}
+.music-btn.active {
+  background: #eef8f4;
+  border-color: #b9dfd4;
+  color: #24624f;
+}
+.small-btn {
+  border-radius: 11px;
+  padding: 8px 11px;
+}
+.tiny-action {
+  border-radius: 9px;
+  padding: 5px 7px;
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.challenge-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding: 12px 15px;
+  border: 1px solid #d6c8ff;
+  border-radius: 16px;
+  background: #f3efff;
+  color: var(--accent);
+}
+.challenge-banner div { display: grid; gap: 2px; }
+.challenge-banner span { color: var(--muted); font-size: 0.8rem; }
+
+.number-help {
+  margin: -5px 0 10px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+.num-btn.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 0 2px rgba(92, 75, 155, 0.17);
+}
+.cell.number-mark:not(.selected) {
+  background: #ffe8a8 !important;
+  color: #5d4300 !important;
+  box-shadow: inset 0 0 0 1px #d6a72a;
+}
+.cell.shared.number-mark:not(.selected) { background: #f5df98 !important; }
+
+.creator-callout {
+  background: linear-gradient(145deg, #f5f0ff, #eef9f5);
+}
+.creator-callout p {
+  margin: -4px 0 12px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.42;
+}
+.creator-btn {
+  background: #e8f5f0;
+  color: #275e4e;
+}
+.creator-btn:disabled,
+.wide-btn:disabled {
+  opacity: .48;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.creator-section {
+  margin-top: 24px;
+  padding: 20px;
+  border-radius: 26px;
+  background: var(--surface);
+  border: 1px solid rgba(92, 75, 155, 0.12);
+  box-shadow: var(--shadow);
+}
+.creator-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+.creator-header h2 { margin: 0; font-size: clamp(1.5rem, 3vw, 2.2rem); }
+.creator-header p:not(.eyebrow) { margin: 7px 0 0; color: var(--muted); max-width: 720px; }
+.creator-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 18px;
+  align-items: start;
+}
+.creator-board-card {
+  padding: 14px;
+  border-radius: 20px;
+  background: #faf9fd;
+  border: 1px solid #e5e0ed;
+}
+.creator-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.creator-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+.creator-toolbar select {
+  border: 1px solid #ddd7e8;
+  border-radius: 9px;
+  background: #fff;
+  color: var(--ink);
+  padding: 7px 8px;
+}
+.creator-board-wrap {
+  display: grid;
+  place-items: center;
+  overflow: auto;
+}
+.creator-board { width: min(100%, 760px); }
+.creator-board .cell {
+  cursor: pointer;
+  user-select: none;
+}
+.creator-board .cell.creator-hidden {
+  color: transparent;
+  background: #fbfafc;
+}
+.creator-board.show-solution .cell.creator-hidden {
+  color: #c5bfce;
+  background: #fbfafc;
+  font-weight: 550;
+}
+.creator-board .cell.creator-given {
+  background: #f1edf8;
+  color: #2c2740;
+  font-weight: 850;
+}
+.creator-board .cell.creator-given.shared { background: #cde9e1; }
+.creator-tip {
+  margin: 10px 3px 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-align: center;
+}
+.creator-controls { display: grid; gap: 14px; }
+.creator-controls h3 { margin: 0 0 11px; font-size: 0.92rem; }
+.creator-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+.creator-stats strong { color: var(--ink); }
+.validation-box {
+  margin-bottom: 10px;
+  padding: 11px;
+  border-radius: 12px;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  font-weight: 700;
+}
+.validation-box.neutral { background: #f1eff4; color: var(--muted); }
+.validation-box.good { background: #e6f5eb; color: #25613a; }
+.validation-box.warn { background: #fff3cf; color: #765400; }
+.validation-box.bad { background: #ffe7e7; color: #8c3232; }
+
+.celebration-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 80;
+  pointer-events: none;
+}
+.subgrid-celebration {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  z-index: 81;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 16px;
+  border-radius: 999px;
+  background: rgba(39, 34, 48, .94);
+  color: #fff;
+  box-shadow: 0 14px 38px rgba(0,0,0,.22);
+  font-size: 0.86rem;
+}
+.subgrid-celebration span { font-size: 1.15rem; }
+
+@media (max-width: 940px) {
+  .creator-layout { grid-template-columns: 1fr; }
+  .creator-controls { grid-template-columns: 1fr 1fr; }
+  .creator-controls > .help-card { grid-column: 1 / -1; }
+}
+
+@media (max-width: 620px) {
+  .music-btn { padding: 7px 9px; font-size: 0.72rem; box-shadow: none; }
+  .challenge-banner { align-items: flex-start; }
+  .challenge-banner span { font-size: 0.72rem; }
+  .creator-section { margin-top: 14px; padding: 10px; border-radius: 18px; }
+  .creator-header { gap: 8px; }
+  .creator-header p:not(.eyebrow) { font-size: 0.78rem; }
+  .creator-board-card { padding: 6px; }
+  .creator-toolbar { gap: 5px; }
+  .creator-toolbar label { width: 100%; justify-content: space-between; }
+  .creator-toolbar .small-btn { flex: 1 1 auto; font-size: 0.7rem; }
+  .creator-board .cell { font-size: clamp(0.51rem, 3.2vw, 0.82rem); }
+  .creator-controls { grid-template-columns: 1fr; }
+  .creator-controls > .help-card { grid-column: auto; }
+  .subgrid-celebration { top: 8px; max-width: calc(100% - 18px); font-size: 0.76rem; }
+}

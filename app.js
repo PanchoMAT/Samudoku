@@ -111,6 +111,20 @@ const puzzleGridEl = document.getElementById("puzzle-grid");
 const packDescriptionEl = document.getElementById("pack-description");
 const rewardBoxEl = document.getElementById("reward-box");
 const winMessageEl = document.getElementById("win-message");
+const musicBtnEl = document.getElementById("music-btn");
+const challengeBannerEl = document.getElementById("challenge-banner");
+const creatorSectionEl = document.getElementById("creator-section");
+const creatorBoardEl = document.getElementById("creator-board");
+const creatorPresetEl = document.getElementById("creator-preset");
+const creatorGivensCountEl = document.getElementById("creator-givens-count");
+const creatorDifficultyEl = document.getElementById("creator-difficulty");
+const creatorValidationEl = document.getElementById("creator-validation");
+const creatorShareBtnEl = document.getElementById("creator-share-btn");
+const creatorPlayBtnEl = document.getElementById("creator-play-btn");
+const creatorCopyBtnEl = document.getElementById("creator-copy-btn");
+const celebrationCanvasEl = document.getElementById("celebration-canvas");
+const subgridCelebrationEl = document.getElementById("subgrid-celebration");
+const subgridCelebrationTextEl = document.getElementById("subgrid-celebration-text");
 
 const solution = new Map();
 const givens = new Map();
@@ -135,6 +149,24 @@ let toastHandle = null;
 let usedHints = 0;
 let hadError = false;
 let alreadyWonThisSession = false;
+let selectedNumber = null;
+let completedSubgrids = new Set();
+let customChallengeMode = false;
+let customChallengeId = null;
+
+let creatorSolution = new Map();
+let creatorGivens = new Set();
+let creatorCells = new Map();
+let creatorShowSolution = false;
+let creatorValidationFresh = false;
+let creatorLastAnalysis = null;
+let creatorSeedCounter = 0;
+
+let audioContext = null;
+let musicMaster = null;
+let musicTimer = null;
+let musicEnabled = false;
+let musicChordIndex = 0;
 
 function clampNumber(value, min, max, fallback) {
   return Number.isInteger(value) && value >= min && value <= max ? value : fallback;
@@ -302,11 +334,23 @@ function createNumberPad() {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "num-btn";
+    button.dataset.number = String(number);
     button.textContent = String(number);
-    button.setAttribute("aria-label", `Escribir ${number}`);
-    button.addEventListener("click", () => enterNumber(number));
+    button.setAttribute("aria-label", `Seleccionar y escribir ${number}`);
+    button.addEventListener("click", () => {
+      selectedNumber = number;
+      renderNumberPadState();
+      renderHighlights();
+      if (selectedKey && !isLocked(selectedKey)) enterNumber(number);
+    });
     numberPadEl.appendChild(button);
   }
+}
+
+function renderNumberPadState() {
+  numberPadEl.querySelectorAll(".num-btn").forEach(button => {
+    button.classList.toggle("active", Number(button.dataset.number) === selectedNumber);
+  });
 }
 
 function createLevelControls() {
@@ -350,6 +394,11 @@ function renderLevelControls() {
 }
 
 function updateCurrentLabels() {
+  if (customChallengeMode) {
+    difficultyPillEl.textContent = "Desafío compartido";
+    levelLabelEl.textContent = "🎁 Samudoku personalizado";
+    return;
+  }
   const pack = PACKS[currentPackIndex];
   difficultyPillEl.textContent = `${pack.name} · ${currentPuzzleIndex + 1}/10`;
   levelLabelEl.textContent = `${pack.icon} ${pack.name} · Desafío ${currentPuzzleIndex + 1}`;
@@ -395,6 +444,9 @@ function setFocus(mode) {
 }
 
 function loadCurrentPuzzle() {
+  customChallengeMode = false;
+  customChallengeId = null;
+  challengeBannerEl.classList.add("hidden");
   currentPuzzle = generatePuzzle(currentPackIndex, currentPuzzleIndex);
   solution.clear();
   givens.clear();
@@ -407,12 +459,14 @@ function loadCurrentPuzzle() {
   });
 
   selectedKey = null;
+  selectedNumber = null;
   focusMode = "all";
   startTime = Date.now();
   usedHints = 0;
   hadError = false;
   alreadyWonThisSession = false;
   loadGameState();
+  initializeCompletedSubgrids();
   updateCurrentLabels();
   setFocus("all");
   renderValues();
@@ -429,6 +483,9 @@ function loadCurrentPuzzle() {
 
 function switchPuzzle(packIndex, puzzleIndex) {
   saveGameState();
+  if (customChallengeMode && window.location.hash.startsWith("#challenge=")) {
+    history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+  }
   currentPackIndex = packIndex;
   currentPuzzleIndex = puzzleIndex;
   browserPackIndex = packIndex;
@@ -489,15 +546,20 @@ function isVisibleInFocus(key) {
 
 function renderHighlights() {
   const selectedValue = selectedKey ? values.get(selectedKey) : null;
+  const numberToMark = selectedNumber || selectedValue || null;
   const activeGridIds = selectedKey ? memberships.get(selectedKey) || [] : [];
 
   cells.forEach((cell, key) => {
-    cell.classList.remove("selected", "peer", "same-number", "active-grid");
-    if (!selectedKey) return;
-    if ((memberships.get(key) || []).some(id => activeGridIds.includes(id))) cell.classList.add("active-grid");
-    if (key === selectedKey) cell.classList.add("selected");
-    else if (arePeers(selectedKey, key)) cell.classList.add("peer");
-    if (selectedValue && values.get(key) === selectedValue) cell.classList.add("same-number");
+    cell.classList.remove("selected", "peer", "same-number", "number-mark", "active-grid");
+
+    if (selectedKey) {
+      if ((memberships.get(key) || []).some(id => activeGridIds.includes(id))) cell.classList.add("active-grid");
+      if (key === selectedKey) cell.classList.add("selected");
+      else if (arePeers(selectedKey, key)) cell.classList.add("peer");
+      if (selectedValue && values.get(key) === selectedValue) cell.classList.add("same-number");
+    }
+
+    if (numberToMark && values.get(key) === numberToMark) cell.classList.add("number-mark");
   });
 }
 
@@ -509,17 +571,24 @@ function renderValues() {
     cell.classList.toggle("hinted", hinted.has(key));
   });
   updateProgress();
+  renderNumberPadState();
   renderHighlights();
 }
 
 function isLocked(key) { return givens.has(key) || hinted.has(key); }
 
 function enterNumber(number) {
-  if (!selectedKey || isLocked(selectedKey)) return;
+  selectedNumber = number;
+  renderNumberPadState();
+  if (!selectedKey || isLocked(selectedKey)) {
+    renderHighlights();
+    return;
+  }
   values.set(selectedKey, number);
   clearValidation(selectedKey);
   saveGameState();
   renderValues();
+  checkSubgridCompletions();
   checkForWin(false);
 }
 
@@ -591,6 +660,7 @@ function giveHint() {
   renderValues();
   updateActiveLabel();
   showToast(`Pista colocada · −${HINT_COST} ⭐`);
+  checkSubgridCompletions();
   checkForWin(false);
 }
 
@@ -599,12 +669,14 @@ function resetGame() {
   givens.forEach((value, key) => values.set(key, value));
   hinted.clear();
   selectedKey = null;
+  selectedNumber = null;
+  completedSubgrids = new Set();
   startTime = Date.now();
   usedHints = 0;
   hadError = false;
   alreadyWonThisSession = false;
   localStorage.removeItem(gameStorageKey());
-  cells.forEach(cell => cell.classList.remove("wrong", "correct", "hinted", "selected", "peer", "same-number", "active-grid"));
+  cells.forEach(cell => cell.classList.remove("wrong", "correct", "hinted", "selected", "peer", "same-number", "number-mark", "active-grid"));
   renderValues();
   updateActiveLabel();
   startTimer();
@@ -643,6 +715,18 @@ function checkForWin(showFeedback = true) {
   clearInterval(timerHandle);
   saveGameState();
 
+  if (customChallengeMode) {
+    rewardBoxEl.textContent = "Los desafíos compartidos no entregan estrellas, para mantener equilibrado el sistema de recompensas.";
+    winMessageEl.textContent = "¡Completaste el Samudoku personalizado!";
+    modalEl.classList.remove("hidden");
+    modalEl.setAttribute("aria-hidden", "false");
+    document.getElementById("next-level-btn").textContent = "Volver a niveles";
+    launchFireworks(5);
+    if (showFeedback) showToast("¡Desafío compartido completado!");
+    return true;
+  }
+
+  document.getElementById("next-level-btn").textContent = "Siguiente desafío";
   const firstCompletion = !profile.completed[currentPuzzle.id];
   let reward = 0;
   const rewardParts = [];
@@ -676,6 +760,7 @@ function checkForWin(showFeedback = true) {
   modalEl.classList.remove("hidden");
   modalEl.setAttribute("aria-hidden", "false");
   renderLevelControls();
+  launchFireworks(6);
   if (showFeedback) showToast("¡Samudoku completado!");
   return true;
 }
@@ -757,6 +842,10 @@ function handleKeyboard(event) {
 }
 
 function goToNextPuzzle() {
+  if (customChallengeMode) {
+    leaveCustomChallenge();
+    return;
+  }
   let nextPack = currentPackIndex;
   let nextPuzzle = currentPuzzleIndex + 1;
   if (nextPuzzle >= 10) {
@@ -768,11 +857,626 @@ function goToNextPuzzle() {
   switchPuzzle(nextPack, nextPuzzle);
 }
 
+
+
+function gridKeys(grid) {
+  const keys = [];
+  for (let row = grid.row; row < grid.row + 9; row += 1) {
+    for (let col = grid.col; col < grid.col + 9; col += 1) keys.push(keyOf(row, col));
+  }
+  return keys;
+}
+
+function isGridSolved(grid) {
+  return gridKeys(grid).every(key => values.get(key) === solution.get(key));
+}
+
+function initializeCompletedSubgrids() {
+  completedSubgrids = new Set();
+  GRIDS.forEach(grid => {
+    if (isGridSolved(grid)) completedSubgrids.add(grid.id);
+  });
+}
+
+function checkSubgridCompletions() {
+  const newlyCompleted = [];
+  GRIDS.forEach(grid => {
+    if (!completedSubgrids.has(grid.id) && isGridSolved(grid)) {
+      completedSubgrids.add(grid.id);
+      newlyCompleted.push(grid);
+    }
+  });
+  if (!newlyCompleted.length) return;
+  const names = newlyCompleted.map(grid => grid.name).join(" + ");
+  showSubgridCelebration(newlyCompleted.length === 1 ? `¡${names} completado!` : `¡${newlyCompleted.length} sudokus completados!`);
+  launchFireworks(Math.min(4, newlyCompleted.length + 2));
+}
+
+function showSubgridCelebration(text) {
+  subgridCelebrationTextEl.textContent = text;
+  subgridCelebrationEl.classList.remove("hidden");
+  window.setTimeout(() => subgridCelebrationEl.classList.add("hidden"), 1900);
+}
+
+function launchFireworks(bursts = 3) {
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const canvas = celebrationCanvasEl;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  canvas.width = Math.floor(width * dpr);
+  canvas.height = Math.floor(height * dpr);
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const palette = ["#5c4b9b", "#f0b84a", "#55a68d", "#e46f86", "#6f8fd6", "#ffffff"];
+  const particles = [];
+  for (let b = 0; b < bursts; b += 1) {
+    const originX = width * (0.18 + Math.random() * 0.64);
+    const originY = height * (0.16 + Math.random() * 0.38);
+    const count = 28 + Math.floor(Math.random() * 16);
+    for (let i = 0; i < count; i += 1) {
+      const angle = (Math.PI * 2 * i) / count + Math.random() * 0.18;
+      const speed = 1.7 + Math.random() * 3.2;
+      particles.push({
+        x: originX,
+        y: originY,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 1,
+        decay: 0.012 + Math.random() * 0.012,
+        size: 1.4 + Math.random() * 2.2,
+        color: palette[Math.floor(Math.random() * palette.length)]
+      });
+    }
+  }
+
+  let frame;
+  function draw() {
+    ctx.clearRect(0, 0, width, height);
+    let alive = 0;
+    particles.forEach(particle => {
+      if (particle.life <= 0) return;
+      alive += 1;
+      particle.x += particle.vx;
+      particle.y += particle.vy;
+      particle.vy += 0.035;
+      particle.vx *= 0.992;
+      particle.life -= particle.decay;
+      ctx.globalAlpha = Math.max(0, particle.life);
+      ctx.fillStyle = particle.color;
+      ctx.beginPath();
+      ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    if (alive) frame = requestAnimationFrame(draw);
+    else ctx.clearRect(0, 0, width, height);
+  }
+  if (frame) cancelAnimationFrame(frame);
+  draw();
+}
+
+async function toggleMusic() {
+  if (musicEnabled) {
+    stopMusic();
+    return;
+  }
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) {
+    showToast("Este navegador no permite la música generada por Samudoku.");
+    return;
+  }
+  try {
+    audioContext = audioContext || new AudioCtx();
+    if (audioContext.state === "suspended") await audioContext.resume();
+    musicMaster = audioContext.createGain();
+    musicMaster.gain.setValueAtTime(0.55, audioContext.currentTime);
+    musicMaster.connect(audioContext.destination);
+    musicEnabled = true;
+    musicBtnEl.classList.add("active");
+    musicBtnEl.setAttribute("aria-pressed", "true");
+    musicBtnEl.textContent = "🎵 Música ✓";
+    playAmbientChord();
+    musicTimer = window.setInterval(playAmbientChord, 6800);
+  } catch {
+    showToast("No fue posible activar la música en este navegador.");
+  }
+}
+
+function playAmbientChord() {
+  if (!musicEnabled || !audioContext || !musicMaster) return;
+  const chords = [
+    [261.63, 329.63, 392.00, 493.88],
+    [220.00, 261.63, 329.63, 440.00],
+    [196.00, 246.94, 293.66, 392.00],
+    [174.61, 220.00, 261.63, 349.23]
+  ];
+  const chord = chords[musicChordIndex % chords.length];
+  musicChordIndex += 1;
+  const now = audioContext.currentTime;
+  chord.forEach((frequency, index) => {
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    const filter = audioContext.createBiquadFilter();
+    oscillator.type = index % 2 === 0 ? "sine" : "triangle";
+    oscillator.frequency.setValueAtTime(frequency / (index === 0 ? 2 : 1), now);
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(1100, now);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(index === 0 ? 0.018 : 0.010, now + 1.8);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 6.4);
+    oscillator.connect(filter);
+    filter.connect(gain);
+    gain.connect(musicMaster);
+    oscillator.start(now);
+    oscillator.stop(now + 6.5);
+  });
+}
+
+function stopMusic() {
+  musicEnabled = false;
+  if (musicTimer) window.clearInterval(musicTimer);
+  musicTimer = null;
+  if (musicMaster && audioContext) {
+    const now = audioContext.currentTime;
+    musicMaster.gain.cancelScheduledValues(now);
+    musicMaster.gain.setValueAtTime(Math.max(0.0001, musicMaster.gain.value), now);
+    musicMaster.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+  }
+  musicBtnEl.classList.remove("active");
+  musicBtnEl.setAttribute("aria-pressed", "false");
+  musicBtnEl.textContent = "🎵 Música";
+}
+
+function buildConstraintUnits() {
+  const units = [];
+  GRIDS.forEach(grid => {
+    for (let i = 0; i < 9; i += 1) {
+      const rowUnit = [];
+      const colUnit = [];
+      for (let j = 0; j < 9; j += 1) {
+        rowUnit.push(keyOf(grid.row + i, grid.col + j));
+        colUnit.push(keyOf(grid.row + j, grid.col + i));
+      }
+      units.push(rowUnit, colUnit);
+    }
+    for (let br = 0; br < 3; br += 1) {
+      for (let bc = 0; bc < 3; bc += 1) {
+        const box = [];
+        for (let r = 0; r < 3; r += 1) {
+          for (let c = 0; c < 3; c += 1) box.push(keyOf(grid.row + br * 3 + r, grid.col + bc * 3 + c));
+        }
+        units.push(box);
+      }
+    }
+  });
+  return units;
+}
+
+let SOLVER_UNITS = [];
+let SOLVER_INDEX = new Map();
+let SOLVER_UNIT_INDICES = [];
+let SOLVER_CELL_UNITS = [];
+const FULL_DIGIT_MASK = 0b1111111110;
+
+function initSolverStructures() {
+  SOLVER_UNITS = buildConstraintUnits();
+  SOLVER_INDEX = new Map(shapeCells.map((key, index) => [key, index]));
+  SOLVER_UNIT_INDICES = SOLVER_UNITS.map(unit => unit.map(key => SOLVER_INDEX.get(key)));
+  SOLVER_CELL_UNITS = shapeCells.map(() => []);
+  SOLVER_UNIT_INDICES.forEach((unit, unitIndex) => unit.forEach(index => SOLVER_CELL_UNITS[index].push(unitIndex)));
+}
+
+function bitCount(mask) {
+  let count = 0;
+  while (mask) {
+    mask &= mask - 1;
+    count += 1;
+  }
+  return count;
+}
+
+function solveSamudoku(givenMap, options = {}) {
+  const maxSolutions = options.maxSolutions || 2;
+  const deadline = performance.now() + (options.timeLimitMs || 2600);
+  const maxNodes = options.maxNodes || 500000;
+  const board = new Uint8Array(shapeCells.length);
+  const unitMasks = new Uint16Array(SOLVER_UNIT_INDICES.length);
+  let invalid = false;
+
+  givenMap.forEach((value, key) => {
+    const index = SOLVER_INDEX.get(key);
+    if (index === undefined || value < 1 || value > 9 || invalid) return;
+    const bit = 1 << value;
+    for (const unitIndex of SOLVER_CELL_UNITS[index]) {
+      if (unitMasks[unitIndex] & bit) {
+        invalid = true;
+        return;
+      }
+    }
+    board[index] = value;
+    for (const unitIndex of SOLVER_CELL_UNITS[index]) unitMasks[unitIndex] |= bit;
+  });
+
+  if (invalid) return { status: "invalid", solutions: 0, nodes: 0, guesses: 0, timedOut: false, firstSolution: null };
+
+  let solutionsFound = 0;
+  let nodes = 0;
+  let guesses = 0;
+  let maxDepth = 0;
+  let timedOut = false;
+  let firstSolutionArray = null;
+
+  function search(depth) {
+    if (solutionsFound >= maxSolutions || timedOut) return;
+    nodes += 1;
+    if (nodes > maxNodes || performance.now() > deadline) {
+      timedOut = true;
+      return;
+    }
+    maxDepth = Math.max(maxDepth, depth);
+
+    let bestIndex = -1;
+    let bestMask = 0;
+    let bestCount = 10;
+
+    for (let index = 0; index < board.length; index += 1) {
+      if (board[index]) continue;
+      let used = 0;
+      for (const unitIndex of SOLVER_CELL_UNITS[index]) used |= unitMasks[unitIndex];
+      const mask = FULL_DIGIT_MASK & ~used;
+      const count = bitCount(mask);
+      if (count === 0) return;
+      if (count < bestCount) {
+        bestCount = count;
+        bestMask = mask;
+        bestIndex = index;
+        if (count === 1) break;
+      }
+    }
+
+    if (bestIndex === -1) {
+      solutionsFound += 1;
+      if (!firstSolutionArray) firstSolutionArray = Uint8Array.from(board);
+      return;
+    }
+
+    if (bestCount > 1) guesses += 1;
+    let mask = bestMask;
+    while (mask && solutionsFound < maxSolutions && !timedOut) {
+      const bit = mask & -mask;
+      const digit = Math.log2(bit) | 0;
+      board[bestIndex] = digit;
+      for (const unitIndex of SOLVER_CELL_UNITS[bestIndex]) unitMasks[unitIndex] |= bit;
+      search(depth + 1);
+      for (const unitIndex of SOLVER_CELL_UNITS[bestIndex]) unitMasks[unitIndex] &= ~bit;
+      board[bestIndex] = 0;
+      mask &= mask - 1;
+    }
+  }
+
+  search(0);
+  const firstSolution = firstSolutionArray ? new Map(shapeCells.map((key, index) => [key, firstSolutionArray[index]])) : null;
+  return {
+    status: timedOut ? "timeout" : solutionsFound === 0 ? "none" : solutionsFound === 1 ? "unique" : "multiple",
+    solutions: solutionsFound,
+    nodes,
+    guesses,
+    maxDepth,
+    timedOut,
+    firstSolution
+  };
+}
+
+function estimateDifficulty(givensCount, analysis) {
+  const empties = shapeCells.length - givensCount;
+  const effort = Math.log10(Math.max(1, analysis.nodes || 1)) * 12 + Math.log10(Math.max(1, analysis.guesses || 1)) * 10;
+  const score = empties * 0.34 + effort;
+  if (score < 62) return "Fácil";
+  if (score < 82) return "Medio";
+  if (score < 103) return "Difícil";
+  return "Experto";
+}
+
+function initCreatorBoard() {
+  creatorBoardEl.innerHTML = "";
+  shapeCells.forEach(key => {
+    const [row, col] = coordsOf(key);
+    const memberGrids = gridMemberships(row, col);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "cell";
+    if (memberGrids.length > 1) button.classList.add("shared");
+    button.style.gridRow = String(row + 1);
+    button.style.gridColumn = String(col + 1);
+    const borders = borderThicknesses(row, col, memberGrids);
+    button.style.borderTopWidth = `${borders.top}px`;
+    button.style.borderRightWidth = `${borders.right}px`;
+    button.style.borderBottomWidth = `${borders.bottom}px`;
+    button.style.borderLeftWidth = `${borders.left}px`;
+    button.addEventListener("click", () => toggleCreatorGiven(key));
+    creatorCells.set(key, button);
+    creatorBoardEl.appendChild(button);
+  });
+  generateCreatorDraft();
+}
+
+function creatorPresetPackIndex() {
+  const id = creatorPresetEl.value;
+  const index = PACKS.findIndex(pack => pack.id === id);
+  return index >= 0 ? index : 1;
+}
+
+function generateCreatorDraft() {
+  const packIndex = creatorPresetPackIndex();
+  creatorSeedCounter += 1;
+  const puzzleIndex = (Date.now() + creatorSeedCounter * 7) % 10;
+  const draft = generatePuzzle(packIndex, puzzleIndex);
+  creatorSolution = new Map(draft.solution);
+  creatorGivens = new Set(draft.givens.keys());
+  creatorValidationFresh = false;
+  creatorLastAnalysis = null;
+  renderCreatorBoard();
+  resetCreatorValidation("Borrador listo. Puedes ocultar o recuperar pistas antes de analizarlo.");
+}
+
+function toggleCreatorGiven(key) {
+  if (creatorGivens.has(key)) creatorGivens.delete(key);
+  else creatorGivens.add(key);
+  creatorValidationFresh = false;
+  creatorLastAnalysis = null;
+  renderCreatorBoard();
+  resetCreatorValidation("Cambiaste las pistas. Vuelve a analizar antes de compartir.");
+}
+
+function renderCreatorBoard() {
+  creatorBoardEl.classList.toggle("show-solution", creatorShowSolution);
+  creatorCells.forEach((cell, key) => {
+    cell.textContent = String(creatorSolution.get(key) || "");
+    const isGiven = creatorGivens.has(key);
+    cell.classList.toggle("creator-given", isGiven);
+    cell.classList.toggle("creator-hidden", !isGiven);
+  });
+  creatorGivensCountEl.textContent = String(creatorGivens.size);
+}
+
+function toggleCreatorSolution() {
+  creatorShowSolution = !creatorShowSolution;
+  document.getElementById("creator-show-solution-btn").setAttribute("aria-pressed", String(creatorShowSolution));
+  document.getElementById("creator-show-solution-btn").textContent = creatorShowSolution ? "🙈 Ocultar solución" : "👁 Mostrar solución";
+  renderCreatorBoard();
+}
+
+function resetCreatorValidation(message) {
+  creatorDifficultyEl.textContent = "Sin analizar";
+  creatorValidationEl.className = "validation-box neutral";
+  creatorValidationEl.textContent = message;
+  creatorShareBtnEl.disabled = true;
+  creatorPlayBtnEl.disabled = true;
+  creatorCopyBtnEl.disabled = true;
+}
+
+function creatorGivenMap() {
+  const map = new Map();
+  creatorGivens.forEach(key => map.set(key, creatorSolution.get(key)));
+  return map;
+}
+
+function analyzeCreatorPuzzle() {
+  const givens = creatorGivenMap();
+  creatorValidationEl.className = "validation-box neutral";
+  creatorValidationEl.textContent = "Analizando solución y unicidad…";
+  document.getElementById("creator-validate-btn").disabled = true;
+
+  window.setTimeout(() => {
+    const analysis = solveSamudoku(givens, { maxSolutions: 2, timeLimitMs: 3200, maxNodes: 650000 });
+    creatorLastAnalysis = analysis;
+    const difficulty = estimateDifficulty(givens.size, analysis);
+    creatorDifficultyEl.textContent = `${difficulty} (estimada)`;
+    document.getElementById("creator-validate-btn").disabled = false;
+
+    if (analysis.status === "invalid" || analysis.status === "none") {
+      creatorValidationEl.className = "validation-box bad";
+      creatorValidationEl.textContent = "Este desafío no tiene una solución válida.";
+      creatorValidationFresh = true;
+      return;
+    }
+
+    if (analysis.status === "timeout") {
+      creatorValidationEl.className = analysis.solutions >= 1 ? "validation-box warn" : "validation-box bad";
+      creatorValidationEl.textContent = analysis.solutions >= 1
+        ? "Encontré una solución, pero el análisis no alcanzó a certificar que sea única. Agrega algunas pistas y vuelve a probar."
+        : "El análisis es demasiado complejo para certificarlo en el navegador. Agrega más pistas y vuelve a probar.";
+      creatorValidationFresh = true;
+      creatorPlayBtnEl.disabled = analysis.solutions < 1;
+      return;
+    }
+
+    if (analysis.status === "multiple") {
+      creatorValidationEl.className = "validation-box warn";
+      creatorValidationEl.textContent = "Es resoluble, pero tiene más de una solución. Agrega pistas antes de compartirlo como desafío Sudoku.";
+      creatorValidationFresh = true;
+      creatorPlayBtnEl.disabled = false;
+      return;
+    }
+
+    creatorValidationEl.className = "validation-box good";
+    creatorValidationEl.textContent = `✓ Resoluble y con solución única. Dificultad ${difficulty.toLowerCase()} estimada. Nodos de análisis: ${analysis.nodes.toLocaleString("es-CL")}.`;
+    creatorValidationFresh = true;
+    creatorShareBtnEl.disabled = false;
+    creatorPlayBtnEl.disabled = false;
+    creatorCopyBtnEl.disabled = false;
+  }, 30);
+}
+
+function encodeChallenge(givenMap) {
+  const raw = shapeCells.map(key => String(givenMap.get(key) || 0)).join("");
+  return btoa(raw).replace(/=+$/g, "");
+}
+
+function decodeChallenge(encoded) {
+  try {
+    const padded = encoded + "=".repeat((4 - encoded.length % 4) % 4);
+    const raw = atob(padded);
+    if (raw.length !== shapeCells.length || !/^[0-9]+$/.test(raw)) return null;
+    const givens = new Map();
+    [...raw].forEach((char, index) => {
+      const value = Number(char);
+      if (value) givens.set(shapeCells[index], value);
+    });
+    return givens;
+  } catch {
+    return null;
+  }
+}
+
+function creatorChallengeUrl() {
+  const encoded = encodeChallenge(creatorGivenMap());
+  const base = `${window.location.origin}${window.location.pathname}`;
+  return `${base}#challenge=${encoded}`;
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    const ok = document.execCommand("copy");
+    textarea.remove();
+    return ok;
+  }
+}
+
+async function copyCreatorChallengeLink() {
+  if (!creatorValidationFresh || creatorLastAnalysis?.status !== "unique") return;
+  const ok = await copyText(creatorChallengeUrl());
+  showToast(ok ? "Enlace del desafío copiado." : "No pude copiar el enlace automáticamente.");
+}
+
+async function shareCreatorChallenge() {
+  if (!creatorValidationFresh || creatorLastAnalysis?.status !== "unique") return;
+  const url = creatorChallengeUrl();
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: "Desafío Samudoku", text: "Te desafío a resolver este Samudoku Samurai.", url });
+      return;
+    } catch (error) {
+      if (error?.name === "AbortError") return;
+    }
+  }
+  const ok = await copyText(url);
+  showToast(ok ? "Enlace copiado. Ya puedes enviarlo." : "No pude copiar el enlace automáticamente.");
+}
+
+function openCreator() {
+  creatorSectionEl.classList.remove("hidden");
+  creatorSectionEl.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function closeCreator() {
+  creatorSectionEl.classList.add("hidden");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function hashString(text) {
+  let hash = 2166136261;
+  for (let i = 0; i < text.length; i += 1) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function loadCustomPuzzle(givenMap, solvedMap, id) {
+  saveGameState();
+  customChallengeMode = true;
+  customChallengeId = id;
+  currentPuzzle = { id: `custom-${id}`, solution: new Map(solvedMap), givens: new Map(givenMap) };
+  solution.clear();
+  givens.clear();
+  values.clear();
+  hinted.clear();
+  currentPuzzle.solution.forEach((value, key) => solution.set(key, value));
+  currentPuzzle.givens.forEach((value, key) => {
+    givens.set(key, value);
+    values.set(key, value);
+  });
+  selectedKey = null;
+  selectedNumber = null;
+  focusMode = "all";
+  startTime = Date.now();
+  usedHints = 0;
+  hadError = false;
+  alreadyWonThisSession = false;
+  loadGameState();
+  initializeCompletedSubgrids();
+  challengeBannerEl.classList.remove("hidden");
+  updateCurrentLabels();
+  setFocus("all");
+  renderValues();
+  renderLevelControls();
+  renderProfile();
+  startTimer();
+  modalEl.classList.add("hidden");
+  closeCreator();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function playCreatorChallenge() {
+  if (!creatorValidationFresh || !creatorLastAnalysis?.firstSolution) return;
+  const givenMap = creatorGivenMap();
+  const id = hashString(encodeChallenge(givenMap));
+  loadCustomPuzzle(givenMap, creatorLastAnalysis.firstSolution, id);
+}
+
+function loadChallengeFromHash() {
+  const match = window.location.hash.match(/^#challenge=([A-Za-z0-9+/]+)$/);
+  if (!match) return false;
+  const givenMap = decodeChallenge(match[1]);
+  if (!givenMap) {
+    showToast("El enlace del desafío no es válido.");
+    return false;
+  }
+  const analysis = solveSamudoku(givenMap, { maxSolutions: 2, timeLimitMs: 3600, maxNodes: 750000 });
+  if (!analysis.firstSolution) {
+    showToast("No pude abrir este desafío: no se encontró una solución válida.");
+    return false;
+  }
+  if (analysis.status !== "unique") {
+    showToast(analysis.status === "multiple"
+      ? "Este desafío tiene varias soluciones y no puede abrirse como Samudoku válido."
+      : "No pude certificar una solución única para este desafío.");
+    return false;
+  }
+  const id = hashString(match[1]);
+  loadCustomPuzzle(givenMap, analysis.firstSolution, id);
+  return true;
+}
+
+function leaveCustomChallenge() {
+  if (!customChallengeMode) return;
+  history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+  customChallengeMode = false;
+  customChallengeId = null;
+  challengeBannerEl.classList.add("hidden");
+  loadCurrentPuzzle();
+}
 parseBaseBoards();
+initSolverStructures();
 createBoard();
 createNumberPad();
 createLevelControls();
-loadCurrentPuzzle();
+initCreatorBoard();
+
+if (!loadChallengeFromHash()) loadCurrentPuzzle();
 
 document.getElementById("erase-btn").addEventListener("click", eraseSelected);
 document.getElementById("check-btn").addEventListener("click", validateBoard);
@@ -783,6 +1487,21 @@ document.getElementById("close-modal-btn").addEventListener("click", () => {
   modalEl.classList.add("hidden");
   modalEl.setAttribute("aria-hidden", "true");
 });
+document.getElementById("clear-number-highlight").addEventListener("click", () => {
+  selectedNumber = null;
+  renderNumberPadState();
+  renderHighlights();
+});
+document.getElementById("open-creator-btn").addEventListener("click", openCreator);
+document.getElementById("close-creator-btn").addEventListener("click", closeCreator);
+document.getElementById("creator-randomize-btn").addEventListener("click", generateCreatorDraft);
+document.getElementById("creator-show-solution-btn").addEventListener("click", toggleCreatorSolution);
+document.getElementById("creator-validate-btn").addEventListener("click", analyzeCreatorPuzzle);
+document.getElementById("creator-share-btn").addEventListener("click", shareCreatorChallenge);
+document.getElementById("creator-copy-btn").addEventListener("click", copyCreatorChallengeLink);
+document.getElementById("creator-play-btn").addEventListener("click", playCreatorChallenge);
+document.getElementById("leave-challenge-btn").addEventListener("click", leaveCustomChallenge);
+musicBtnEl.addEventListener("click", toggleMusic);
 document.querySelectorAll(".zoom-btn").forEach(button => button.addEventListener("click", () => setFocus(button.dataset.focus)));
 document.addEventListener("keydown", handleKeyboard);
 window.addEventListener("beforeunload", () => {
