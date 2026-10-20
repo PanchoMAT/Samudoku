@@ -19,186 +19,47 @@
       </div>
       <div class="hero-badges">
         <button id="music-btn" class="music-btn" type="button" aria-pressed="false" title="Activar música suave">🎵 Música</button>
-        <div class="star-wallet" title="Estrellas disponibles para comprar pistas">
-          <span aria-hidden="true">⭐</span>
-          <strong id="star-count">4</strong>
-        </div>
+        <div class="star-wallet" title="Estrellas disponibles para comprar pistas"><span aria-hidden="true">⭐</span><strong id="star-count">4</strong></div>
         <div id="difficulty-pill" class="difficulty-pill">Fácil · 1/10</div>
       </div>
     </header>
 
-    <section id="challenge-banner" class="challenge-banner hidden" aria-live="polite">
-      <div>
-        <strong>🎁 Desafío compartido</strong>
-        <span>Estás jugando un Samudoku creado por otra persona.</span>
-      </div>
-      <button id="leave-challenge-btn" class="small-btn" type="button">Volver a niveles</button>
-    </section>
+    <section id="challenge-banner" class="challenge-banner hidden" aria-live="polite"><div><strong>🎁 Desafío compartido</strong><span>Estás jugando un Samudoku creado por otra persona.</span></div><button id="leave-challenge-btn" class="small-btn" type="button">Volver a niveles</button></section>
 
     <section class="game-layout">
       <div class="board-panel">
-        <div class="status-row">
-          <div>
-            <span class="status-label">Desafío actual</span>
-            <strong id="level-label">Fácil · Desafío 1</strong>
-            <span id="active-grid-label" class="active-grid-label">Selecciona una casilla</span>
-          </div>
-          <div class="stats">
-            <span>⏱ <strong id="timer">00:00</strong></span>
-            <span>✓ <strong id="progress">0/369</strong></span>
-          </div>
-        </div>
-
-        <div class="zoom-toolbar" aria-label="Acercar un sudoku">
-          <span class="zoom-label">Vista</span>
-          <button class="zoom-btn active" data-focus="all" type="button">Completa</button>
-          <button class="zoom-btn" data-focus="tl" type="button" title="Superior izquierdo">↖</button>
-          <button class="zoom-btn" data-focus="tr" type="button" title="Superior derecho">↗</button>
-          <button class="zoom-btn" data-focus="c" type="button" title="Central">●</button>
-          <button class="zoom-btn" data-focus="bl" type="button" title="Inferior izquierdo">↙</button>
-          <button class="zoom-btn" data-focus="br" type="button" title="Inferior derecho">↘</button>
-        </div>
-
-        <div id="zoom-dependency-note" class="zoom-dependency-note hidden" role="note">
-          <strong>Vista ampliada.</strong> Este 9×9 forma parte del Samurai completo y puede necesitar información de los otros sudokus a través de las zonas compartidas. Si te atascas, vuelve a <strong>Completa</strong>: el desafío global sí tiene una solución única certificada.
-        </div>
-
-        <div class="board-wrap">
-          <div id="board" class="samurai-board" aria-label="Tablero de Samudoku"></div>
-        </div>
-
-        <p class="shared-note">
-          Las casillas con <span class="shared-sample"></span> pertenecen a dos sudokus a la vez. Usa los botones de <strong>Vista</strong> para ampliar uno de ellos; la vista ampliada no convierte ese tablero en un sudoku independiente.
-        </p>
+        <div class="status-row"><div><span class="status-label">Desafío actual</span><strong id="level-label">Fácil · Desafío 1</strong><span id="active-grid-label" class="active-grid-label">Selecciona una casilla</span></div><div class="stats"><span>⏱ <strong id="timer">00:00</strong></span><span>✓ <strong id="progress">0/369</strong></span></div></div>
+        <div class="zoom-toolbar" aria-label="Acercar un sudoku"><span class="zoom-label">Vista</span><button class="zoom-btn active" data-focus="all" type="button">Completa</button><button class="zoom-btn" data-focus="tl" type="button" title="Superior izquierdo">↖</button><button class="zoom-btn" data-focus="tr" type="button" title="Superior derecho">↗</button><button class="zoom-btn" data-focus="c" type="button" title="Central">●</button><button class="zoom-btn" data-focus="bl" type="button" title="Inferior izquierdo">↙</button><button class="zoom-btn" data-focus="br" type="button" title="Inferior derecho">↘</button></div>
+        <div id="zoom-dependency-note" class="zoom-dependency-note hidden" role="note"><strong>Vista ampliada.</strong> Este 9×9 forma parte del Samurai completo y puede necesitar información de los otros sudokus a través de las zonas compartidas. Si te atascas, vuelve a <strong>Completa</strong>: el desafío global sí tiene una solución única certificada.</div>
+        <div class="board-wrap"><div id="board" class="samurai-board" aria-label="Tablero de Samudoku"></div></div>
+        <p class="shared-note">Las casillas con <span class="shared-sample"></span> pertenecen a dos sudokus a la vez. Usa los botones de <strong>Vista</strong> para ampliar uno de ellos; la vista ampliada no convierte ese tablero en un sudoku independiente.</p>
       </div>
 
       <aside class="control-panel">
-        <div class="panel-card level-card">
-          <div class="card-heading-row">
-            <h2>Niveles</h2>
-            <span class="tiny-note">10 por grupo</span>
-          </div>
-          <div id="difficulty-tabs" class="difficulty-tabs" aria-label="Grupos de dificultad"></div>
-          <p id="pack-description" class="pack-description"></p>
-          <div id="puzzle-grid" class="puzzle-grid" aria-label="Desafíos del nivel"></div>
-        </div>
-
-        <div class="panel-card">
-          <div class="card-heading-row">
-            <h2>Números</h2>
-            <button id="clear-number-highlight" class="tiny-action" type="button" title="Quitar resaltado de número">Quitar marca</button>
-          </div>
-          <p class="number-help">Toca un número para marcar todas sus apariciones en el tablero.</p>
-          <div id="number-pad" class="number-pad" aria-label="Teclado numérico"></div>
-          <button id="erase-btn" class="wide-btn secondary" type="button">⌫ Borrar</button>
-        </div>
-
-        <div class="panel-card actions">
-          <button id="check-btn" class="wide-btn primary" type="button">Comprobar</button>
-          <button id="hint-btn" class="wide-btn hint-btn" type="button">💡 Pista · <span id="hint-cost">2</span> ⭐</button>
-          <button id="reset-btn" class="wide-btn danger-ghost" type="button">↻ Reiniciar este desafío</button>
-        </div>
-
-        <div class="panel-card creator-callout">
-          <h2>🧩 Crea tu propio Samudoku</h2>
-          <p>Diseña un desafío, comprueba si tiene solución única y compártelo con un enlace.</p>
-          <button id="open-creator-btn" class="wide-btn creator-btn" type="button">Abrir creador</button>
-        </div>
-
-        <div class="panel-card help-card">
-          <h2>Estrellas y pistas</h2>
-          <p>Empiezas con algunas ⭐. Cada pista cuesta <strong>2 estrellas</strong>.</p>
-          <p>La primera vez que completas un desafío ganas estrellas. Resolverlo sin pistas ni errores entrega bonificaciones.</p>
-          <p>Tu progreso, estrellas y partidas quedan guardados en este dispositivo.</p>
-        </div>
-
-        <div class="panel-card help-card">
-          <h2>Cómo funciona un Samurai</h2>
-          <p>Los cinco sudokus forman <strong>un único rompecabezas</strong>. En niveles avanzados, un 9×9 puede no determinarse por sí solo.</p>
-          <p>Las zonas compartidas llevan información de un tablero a otro. Por eso conviene alternar entre las vistas ampliadas y la vista completa.</p>
-          <p>Los 40 niveles incluidos están comprobados para tener <strong>una solución global única</strong>.</p>
-        </div>
+        <div class="panel-card level-card"><div class="card-heading-row"><h2>Niveles</h2><span class="tiny-note">10 por grupo</span></div><div id="difficulty-tabs" class="difficulty-tabs" aria-label="Grupos de dificultad"></div><p id="pack-description" class="pack-description"></p><div id="puzzle-grid" class="puzzle-grid" aria-label="Desafíos del nivel"></div></div>
+        <div class="panel-card desktop-number-card"><div class="card-heading-row"><h2>Números</h2><button id="clear-number-highlight" class="tiny-action" type="button" title="Quitar resaltado de número">Quitar marca</button></div><p class="number-help">Selecciona una casilla y toca un número. Activa <strong>Notas</strong> para escribir candidatos pequeños.</p><div id="number-pad" class="number-pad" aria-label="Teclado numérico"></div><div class="input-mode-row"><button id="note-mode-btn" class="wide-btn note-mode-btn" type="button" aria-pressed="false">✎ Notas</button><button id="erase-btn" class="wide-btn secondary" type="button">⌫ Borrar</button></div></div>
+        <div class="panel-card actions"><button id="check-btn" class="wide-btn primary" type="button">Comprobar</button><button id="hint-btn" class="wide-btn hint-btn" type="button">💡 Pista · <span id="hint-cost">2</span> ⭐</button><button id="reset-btn" class="wide-btn danger-ghost" type="button">↻ Reiniciar este desafío</button></div>
+        <div class="panel-card creator-callout"><h2>🧩 Crea tu propio Samudoku</h2><p>Diseña un desafío, comprueba si tiene solución única y compártelo con un enlace.</p><button id="open-creator-btn" class="wide-btn creator-btn" type="button">Abrir creador</button></div>
+        <div class="panel-card help-card"><h2>Notas</h2><p>Activa <strong>✎ Notas</strong> para guardar varios candidatos del 1 al 9 en una casilla vacía. Tocar nuevamente un candidato lo quita.</p><p>Cuando escribes un número definitivo, las notas de esa casilla desaparecen automáticamente.</p></div>
+        <div class="panel-card help-card"><h2>Estrellas y pistas</h2><p>Empiezas con algunas ⭐. Cada pista cuesta <strong>2 estrellas</strong>.</p><p>La primera vez que completas un desafío ganas estrellas. Resolverlo sin pistas ni errores entrega bonificaciones.</p><p>Tu progreso, estrellas, notas y partidas quedan guardados en este dispositivo.</p></div>
+        <div class="panel-card help-card"><h2>Cómo funciona un Samurai</h2><p>Los cinco sudokus forman <strong>un único rompecabezas</strong>. En niveles avanzados, un 9×9 puede no determinarse por sí solo.</p><p>Las zonas compartidas llevan información de un tablero a otro. Por eso conviene alternar entre las vistas ampliadas y la vista completa.</p><p>Los 40 niveles incluidos están comprobados para tener <strong>una solución global única</strong>.</p></div>
       </aside>
     </section>
 
     <section id="creator-section" class="creator-section hidden">
-      <div class="creator-header">
-        <div>
-          <p class="eyebrow">Laboratorio Samudoku</p>
-          <h2>Crea tu propio Samudoku</h2>
-          <p>Partimos de una solución Samurai válida. Haz clic en las casillas para decidir qué números quedarán visibles como pistas.</p>
-        </div>
-        <button id="close-creator-btn" class="small-btn" type="button">Cerrar</button>
-      </div>
-
-      <div class="creator-layout">
-        <div class="creator-board-card">
-          <div class="creator-toolbar">
-            <label>
-              Borrador inicial
-              <select id="creator-preset">
-                <option value="easy">Fácil</option>
-                <option value="medium" selected>Medio</option>
-                <option value="hard">Difícil</option>
-                <option value="expert">Experto</option>
-              </select>
-            </label>
-            <button id="creator-randomize-btn" class="small-btn" type="button">🎲 Nuevo borrador</button>
-            <button id="creator-show-solution-btn" class="small-btn" type="button" aria-pressed="false">👁 Mostrar solución</button>
-          </div>
-          <div class="creator-board-wrap">
-            <div id="creator-board" class="samurai-board creator-board" aria-label="Creador de Samudoku"></div>
-          </div>
-          <p class="creator-tip">Casilla oscura = pista que recibirá la otra persona. Casilla tenue = número oculto.</p>
-        </div>
-
-        <aside class="creator-controls">
-          <div class="panel-card">
-            <h3>Estado del desafío</h3>
-            <div id="creator-stats" class="creator-stats">
-              <span>Pistas: <strong id="creator-givens-count">0</strong></span>
-              <span>Dificultad: <strong id="creator-difficulty">Sin analizar</strong></span>
-            </div>
-            <div id="creator-validation" class="validation-box neutral">Todavía no se ha analizado.</div>
-            <button id="creator-validate-btn" class="wide-btn primary" type="button">🔎 Analizar desafío</button>
-          </div>
-
-          <div class="panel-card actions">
-            <button id="creator-share-btn" class="wide-btn creator-btn" type="button" disabled>🔗 Compartir desafío</button>
-            <button id="creator-play-btn" class="wide-btn secondary" type="button" disabled>▶ Probar mi desafío</button>
-            <button id="creator-copy-btn" class="wide-btn secondary" type="button" disabled>📋 Copiar enlace</button>
-          </div>
-
-          <div class="panel-card help-card">
-            <h3>Qué comprueba Samudoku</h3>
-            <p><strong>Resoluble:</strong> encuentra al menos una solución válida.</p>
-            <p><strong>Único:</strong> comprueba que no haya una segunda solución dentro del análisis.</p>
-            <p><strong>Dificultad:</strong> es una estimación basada en pistas y esfuerzo del solucionador automático; sirve como orientación.</p>
-          </div>
-        </aside>
-      </div>
+      <div class="creator-header"><div><p class="eyebrow">Laboratorio Samudoku</p><h2>Crea tu propio Samudoku</h2><p>Partimos de una solución Samurai válida. Haz clic en las casillas para decidir qué números quedarán visibles como pistas.</p></div><button id="close-creator-btn" class="small-btn" type="button">Cerrar</button></div>
+      <div class="creator-layout"><div class="creator-board-card"><div class="creator-toolbar"><label>Borrador inicial<select id="creator-preset"><option value="easy">Fácil</option><option value="medium" selected>Medio</option><option value="hard">Difícil</option><option value="expert">Experto</option></select></label><button id="creator-randomize-btn" class="small-btn" type="button">🎲 Nuevo borrador</button><button id="creator-show-solution-btn" class="small-btn" type="button" aria-pressed="false">👁 Mostrar solución</button></div><div class="creator-board-wrap"><div id="creator-board" class="samurai-board creator-board" aria-label="Creador de Samudoku"></div></div><p class="creator-tip">Casilla oscura = pista que recibirá la otra persona. Casilla tenue = número oculto.</p></div><aside class="creator-controls"><div class="panel-card"><h3>Estado del desafío</h3><div id="creator-stats" class="creator-stats"><span>Pistas: <strong id="creator-givens-count">0</strong></span><span>Dificultad: <strong id="creator-difficulty">Sin analizar</strong></span></div><div id="creator-validation" class="validation-box neutral">Todavía no se ha analizado.</div><button id="creator-validate-btn" class="wide-btn primary" type="button">🔎 Analizar desafío</button></div><div class="panel-card actions"><button id="creator-share-btn" class="wide-btn creator-btn" type="button" disabled>🔗 Compartir desafío</button><button id="creator-play-btn" class="wide-btn secondary" type="button" disabled>▶ Probar mi desafío</button><button id="creator-copy-btn" class="wide-btn secondary" type="button" disabled>📋 Copiar enlace</button></div><div class="panel-card help-card"><h3>Qué comprueba Samudoku</h3><p><strong>Resoluble:</strong> encuentra al menos una solución válida.</p><p><strong>Único:</strong> comprueba que no haya una segunda solución dentro del análisis.</p><p><strong>Dificultad:</strong> es una estimación basada en pistas y esfuerzo del solucionador automático; sirve como orientación.</p></div></aside></div>
     </section>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-
-    <div id="subgrid-celebration" class="subgrid-celebration hidden" aria-live="polite">
-      <span>🎉</span>
-      <strong id="subgrid-celebration-text">¡Sudoku completado!</strong>
-    </div>
-
-    <div id="win-modal" class="modal hidden" aria-hidden="true">
-      <div class="modal-card">
-        <div class="win-icon">★</div>
-        <h2>¡Samudoku completado!</h2>
-        <p id="win-message">Resolviste los cinco sudokus del Samurai.</p>
-        <div id="reward-box" class="reward-box"></div>
-        <div class="modal-actions">
-          <button id="next-level-btn" class="wide-btn primary" type="button">Siguiente desafío</button>
-          <button id="close-modal-btn" class="wide-btn secondary" type="button">Seguir mirando</button>
-        </div>
-      </div>
-    </div>
+    <div id="subgrid-celebration" class="subgrid-celebration hidden" aria-live="polite"><span>🎉</span><strong id="subgrid-celebration-text">¡Sudoku completado!</strong></div>
+    <div id="win-modal" class="modal hidden" aria-hidden="true"><div class="modal-card"><div class="win-icon">★</div><h2>¡Samudoku completado!</h2><p id="win-message">Resolviste los cinco sudokus del Samurai.</p><div id="reward-box" class="reward-box"></div><div class="modal-actions"><button id="next-level-btn" class="wide-btn primary" type="button">Siguiente desafío</button><button id="close-modal-btn" class="wide-btn secondary" type="button">Seguir mirando</button></div></div></div>
   </main>
+
+  <div id="mobile-play-dock" class="mobile-play-dock" aria-label="Controles de juego">
+    <div class="mobile-dock-top"><button id="mobile-note-mode-btn" class="dock-mode-btn" type="button" aria-pressed="false">✎ Notas</button><span id="mobile-mode-label">Número definitivo</span><button id="mobile-erase-btn" class="dock-erase-btn" type="button" aria-label="Borrar casilla">⌫</button></div>
+    <div id="mobile-number-pad" class="mobile-number-pad" aria-label="Teclado numérico fijo"></div>
+  </div>
 
   <script src="app.js"></script>
 </body>
