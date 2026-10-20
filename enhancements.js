@@ -1,6 +1,11 @@
 // Samudoku UX enhancements: candidate notes + always-visible mobile keypad.
 // Kept separate from app.js so the puzzle engine and its validation tests remain untouched.
 
+const enhancementStyles = document.createElement("link");
+enhancementStyles.rel = "stylesheet";
+enhancementStyles.href = "enhancements.css";
+document.head.appendChild(enhancementStyles);
+
 const candidateNotes = new Map();
 let noteMode = false;
 
@@ -53,9 +58,7 @@ function pruneCandidateNotes() {
 
 function noteMarkup(numbers) {
   const slots = [];
-  for (let n = 1; n <= 9; n += 1) {
-    slots.push(`<span class="candidate-slot">${numbers.has(n) ? n : ""}</span>`);
-  }
+  for (let n = 1; n <= 9; n += 1) slots.push(`<span class="candidate-slot">${numbers.has(n) ? n : ""}</span>`);
   return `<span class="candidate-grid" aria-label="Notas: ${[...numbers].sort().join(", ")}">${slots.join("")}</span>`;
 }
 
@@ -78,10 +81,8 @@ renderValues = function renderValuesWithNotes() {
 function toggleCandidate(key, number) {
   if (!key || isLocked(key) || values.has(key)) return;
   const set = candidateNotes.get(key) || new Set();
-  if (set.has(number)) set.delete(number);
-  else set.add(number);
-  if (set.size) candidateNotes.set(key, set);
-  else candidateNotes.delete(key);
+  if (set.has(number)) set.delete(number); else set.add(number);
+  if (set.size) candidateNotes.set(key, set); else candidateNotes.delete(key);
   selectedNumber = number;
   saveCandidateNotes();
   renderValues();
@@ -92,14 +93,8 @@ enterNumber = function enterNumberWithNotes(number) {
   if (noteMode) {
     selectedNumber = number;
     renderNumberPadState();
-    if (!selectedKey || isLocked(selectedKey)) {
-      renderHighlights();
-      return;
-    }
-    if (values.has(selectedKey)) {
-      showToast("Borra el número definitivo antes de agregar notas.");
-      return;
-    }
+    if (!selectedKey || isLocked(selectedKey)) { renderHighlights(); return; }
+    if (values.has(selectedKey)) { showToast("Borra el número definitivo antes de agregar notas."); return; }
     toggleCandidate(selectedKey, number);
     return;
   }
@@ -141,10 +136,7 @@ function syncInputModeUI() {
   });
   if (mobileModeLabel) mobileModeLabel.textContent = noteMode ? "Notas · candidatos" : "Número definitivo";
   document.body.classList.toggle("note-mode", noteMode);
-
-  document.querySelectorAll(".num-btn, .mobile-num-btn").forEach(button => {
-    button.classList.toggle("active", Number(button.dataset.number) === selectedNumber);
-  });
+  document.querySelectorAll(".num-btn, .mobile-num-btn").forEach(button => button.classList.toggle("active", Number(button.dataset.number) === selectedNumber));
 }
 
 function createMobileNumberPad() {
@@ -156,7 +148,7 @@ function createMobileNumberPad() {
     button.className = "mobile-num-btn";
     button.dataset.number = String(number);
     button.textContent = String(number);
-    button.setAttribute("aria-label", `Escribir ${number}${noteMode ? " como nota" : ""}`);
+    button.setAttribute("aria-label", `Escribir ${number}`);
     button.addEventListener("click", () => {
       selectedNumber = number;
       enterNumber(number);
@@ -166,8 +158,6 @@ function createMobileNumberPad() {
   }
 }
 
-// Desktop number buttons already exist. Capture clicks so note mode can use them
-// without the original handler entering the same digit a second time.
 numberPadEl.addEventListener("click", event => {
   const button = event.target.closest(".num-btn");
   if (!button || !noteMode) return;
@@ -180,11 +170,8 @@ numberPadEl.addEventListener("click", event => {
 
 desktopNoteBtn?.addEventListener("click", () => setNoteMode(!noteMode));
 mobileNoteBtn?.addEventListener("click", () => setNoteMode(!noteMode));
-
 document.getElementById("mobile-erase-btn")?.addEventListener("click", eraseSelected);
 
-// The original desktop erase listener was registered before this script. Capture
-// the event here only when the selected empty cell contains notes.
 document.getElementById("erase-btn")?.addEventListener("click", event => {
   if (!selectedKey || values.has(selectedKey) || !candidateNotes.has(selectedKey)) return;
   event.preventDefault();
@@ -192,7 +179,6 @@ document.getElementById("erase-btn")?.addEventListener("click", event => {
   eraseSelected();
 }, true);
 
-// Clear notes when the user explicitly resets the current challenge.
 document.getElementById("reset-btn")?.addEventListener("click", () => {
   candidateNotes.clear();
   const key = notesStorageKey();
@@ -200,7 +186,6 @@ document.getElementById("reset-btn")?.addEventListener("click", () => {
   window.setTimeout(renderCandidateNotes, 0);
 }, true);
 
-// Load the right note collection whenever app.js loads/switches a puzzle.
 const baseLoadCurrentPuzzle = loadCurrentPuzzle;
 loadCurrentPuzzle = function loadCurrentPuzzleWithNotes() {
   baseLoadCurrentPuzzle();
@@ -215,21 +200,16 @@ loadCustomPuzzle = function loadCustomPuzzleWithNotes(givenMap, solvedMap, id) {
   renderCandidateNotes();
 };
 
-// app.js has already loaded the initial puzzle before this enhancement script.
 loadCandidateNotes();
 createMobileNumberPad();
 renderCandidateNotes();
 syncInputModeUI();
 
-// Show the Samurai-dependency explanation only while a 9×9 view is enlarged.
 const baseSetFocus = setFocus;
 setFocus = function setFocusWithDependencyNote(mode) {
   baseSetFocus(mode);
   zoomDependencyNote?.classList.toggle("hidden", mode === "all");
 };
 
-document.querySelectorAll(".zoom-btn").forEach(button => {
-  button.addEventListener("click", () => zoomDependencyNote?.classList.toggle("hidden", button.dataset.focus === "all"));
-});
-
+document.querySelectorAll(".zoom-btn").forEach(button => button.addEventListener("click", () => zoomDependencyNote?.classList.toggle("hidden", button.dataset.focus === "all")));
 window.addEventListener("beforeunload", saveCandidateNotes);
